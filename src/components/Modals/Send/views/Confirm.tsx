@@ -17,6 +17,7 @@ import { useMemo } from 'react'
 import { useFormContext, useWatch } from 'react-hook-form'
 import { useTranslate } from 'react-polyglot'
 import { useHistory } from 'react-router-dom'
+import { AccountDropdown } from 'components/AccountDropdown/AccountDropdown'
 import { Amount } from 'components/Amount/Amount'
 import { MiddleEllipsis } from 'components/MiddleEllipsis/MiddleEllipsis'
 import { Row } from 'components/Row/Row'
@@ -43,10 +44,18 @@ export const Confirm = () => {
   } = useFormContext<SendInput>()
   const history = useHistory()
   const translate = useTranslate()
-  const { vanityAddress, address, asset, cryptoAmount, cryptoSymbol, fiatAmount, feeType } =
-    useWatch({
-      control,
-    })
+  const {
+    vanityAddress,
+    address,
+    asset,
+    cryptoAmount,
+    cryptoSymbol,
+    fiatAmount,
+    feeType,
+    accountId,
+  } = useWatch({
+    control,
+  })
   const { fees } = useSendFees()
 
   const amountWithFees = useMemo(() => {
@@ -97,6 +106,17 @@ export const Confirm = () => {
               {vanityAddress ? vanityAddress : <MiddleEllipsis value={address} />}
             </Row.Value>
           </Row>
+          {asset && asset.assetId && (
+            <Row>
+              <Row.Label>
+                <Text translation='modals.send.confirm.sendFrom' />
+              </Row.Label>
+              <Row.Value>
+                <AccountDropdown assetId={asset.assetId} />
+              </Row.Value>
+            </Row>
+          )}
+
           <FormControl mt={4}>
             <Row variant='vertical'>
               <Row.Label>
