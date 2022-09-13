@@ -134,7 +134,7 @@ export const AccountDropdown: FC<AccountDropdownProps> = ({
   )
 
   const accountNumber = useMemo(
-    () => selectedAccountId && accountMetadata[selectedAccountId].bip44Params.accountNumber,
+    () => selectedAccountId && accountMetadata[selectedAccountId]?.bip44Params.accountNumber,
     [accountMetadata, selectedAccountId],
   )
 
