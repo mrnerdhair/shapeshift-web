@@ -9,11 +9,13 @@ import { useHistory } from 'react-router'
 import type { AccountDropdownProps } from 'components/AccountDropdown/AccountDropdown'
 import { SlideTransition } from 'components/SlideTransition'
 import { Text } from 'components/Text'
+import { useFees } from 'components/Trade/hooks/useFees'
 import { useGetTradeAmounts } from 'components/Trade/hooks/useGetTradeAmounts'
 import { useSwapper } from 'components/Trade/hooks/useSwapper/useSwapperV2'
 import { getSendMaxAmount } from 'components/Trade/hooks/useSwapper/utils'
 import { useSwapperService } from 'components/Trade/hooks/useSwapperService'
 import { useTradeAmounts } from 'components/Trade/hooks/useTradeAmounts'
+import { useTradeQuoteService } from 'components/Trade/hooks/useTradeQuoteService'
 import { useWallet } from 'hooks/useWallet/useWallet'
 import { walletSupportsChain } from 'hooks/useWalletSupportsChain/useWalletSupportsChain'
 import { bn, bnOrZero, positiveOrZero } from 'lib/bignumber/bignumber'
@@ -46,7 +48,9 @@ export const TradeInput = () => {
   const {
     state: { wallet },
   } = useWallet()
+  const { setFees } = useFees()
   const tradeAmountConstants = useGetTradeAmounts()
+  const { getTradeQuoteCallback } = useTradeQuoteService()
 
   // Watched form fields
   const sellTradeAsset = useWatch({ control, name: 'sellTradeAsset' })
@@ -119,7 +123,10 @@ export const TradeInput = () => {
       const currentValues = Object.freeze(getValues())
       const currentSellTradeAsset = currentValues.sellTradeAsset
       const currentBuyTradeAsset = currentValues.buyTradeAsset
-      if (!(currentSellTradeAsset && currentBuyTradeAsset)) return
+      const currentSellAsset = currentSellTradeAsset?.asset
+      const currentBuyAsset = currentBuyTradeAsset?.asset
+      if (!(currentSellTradeAsset && currentBuyTradeAsset && currentSellAsset && currentBuyAsset))
+        return
 
       setValue('buyTradeAsset', { asset: currentSellTradeAsset.asset, amount: '0' })
       setValue('sellTradeAsset', { asset: currentBuyTradeAsset.asset, amount: '0' })
@@ -127,10 +134,25 @@ export const TradeInput = () => {
       setValue('fiatBuyAmount', '0')
       setValue('buyAssetFiatRate', currentValues.sellAssetFiatRate)
       setValue('sellAssetFiatRate', currentValues.buyAssetFiatRate)
+
+      const quote = await getTradeQuoteCallback({
+        sellAsset: currentBuyAsset,
+        buyAsset: currentSellAsset,
+        sellAmount: currentValues.buyTradeAsset.amount ?? '0',
+      })
+      console.log('xxx quote', quote)
+
+      quote && setValue('quote', quote)
+      quote &&
+        (await setFees({
+          quoteOrTrade: quote,
+          sellAsset: currentBuyAsset,
+          buyAsset: currentSellAsset,
+        }))
     } catch (e) {
       moduleLogger.error(e, 'handleToggle error')
     }
-  }, [getValues, setValue])
+  }, [getTradeQuoteCallback, getValues, setFees, setValue])
 
   const handleSendMax: TradeAssetInputProps['onMaxClick'] = useCallback(() => {
     if (!(sellTradeAsset?.asset && quote)) return
@@ -171,6 +193,7 @@ export const TradeInput = () => {
           return
         }
         const trade = await getTrade()
+        console.log('xxx trade', trade)
         setValue('trade', trade)
         history.push({ pathname: TradeRoutePaths.Confirm, state: { fiatRate: feeAssetFiatRate } })
       } catch (e) {

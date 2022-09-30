@@ -204,6 +204,8 @@ export const TradeConfirm = ({ history }: RouterProps) => {
     .times(bnOrZero(sellAssetFiatRate))
     .times(selectedCurrencyToUsdRate)
 
+  console.log('xxx tradeConfirm fees', fees)
+
   const networkFeeFiat = bnOrZero(fees?.networkFeeCryptoHuman)
     .times(fiatRate)
     .times(selectedCurrencyToUsdRate)

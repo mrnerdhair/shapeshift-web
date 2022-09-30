@@ -144,6 +144,8 @@ export const useSwapper = () => {
       sendMax: false,
       receiveAddress,
     }
+
+    console.log('xxx getting trade', { bestTradeSwapper, buildTradeCommonArgs, sellAssetAccountId })
     const sellAssetChainId = sellAsset.chainId
     if (isSupportedNonUtxoSwappingChain(sellAssetChainId)) {
       return bestTradeSwapper.buildTrade({

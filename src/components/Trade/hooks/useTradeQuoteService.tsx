@@ -1,12 +1,12 @@
-import { skipToken } from '@reduxjs/toolkit/query'
 import type { Asset } from '@shapeshiftoss/asset-service'
-import { fromAssetId } from '@shapeshiftoss/caip'
+import { fromAccountId, fromAssetId } from '@shapeshiftoss/caip'
 import type { UtxoBaseAdapter } from '@shapeshiftoss/chain-adapters'
 import type { HDWallet } from '@shapeshiftoss/hdwallet-core'
 import { type GetTradeQuoteInput, type UtxoSupportedChainIds } from '@shapeshiftoss/swapper'
 import type { BIP44Params, UtxoAccountType } from '@shapeshiftoss/types'
-import { useEffect, useState } from 'react'
-import { useFormContext, useWatch } from 'react-hook-form'
+import { useCallback, useEffect, useState } from 'react'
+import { useFormContext } from 'react-hook-form'
+import { useSelector } from 'react-redux'
 import { useSwapper } from 'components/Trade/hooks/useSwapper/useSwapperV2'
 import {
   isSupportedNonUtxoSwappingChain,
@@ -16,14 +16,16 @@ import type { TS } from 'components/Trade/types'
 import { type TradeQuoteInputCommonArgs } from 'components/Trade/types'
 import { getChainAdapterManager } from 'context/PluginProvider/chainAdapterSingleton'
 import { useWallet } from 'hooks/useWallet/useWallet'
+import { logger } from 'lib/logger'
 import { toBaseUnit } from 'lib/math'
-import { useGetTradeQuoteQuery } from 'state/apis/swapper/swapperApi'
-import {
-  selectFiatToUsdRate,
-  selectPortfolioAccountIdsByAssetId,
-  selectPortfolioAccountMetadataByAccountId,
-} from 'state/slices/selectors'
-import { useAppSelector } from 'state/store'
+import type { GetTradeQuoteReturn } from 'state/apis/swapper/swapperApi'
+import { swapperApi } from 'state/apis/swapper/swapperApi'
+import { selectPortfolioAccountIds, selectPortfolioAccountMetadata } from 'state/slices/selectors'
+import { useAppDispatch } from 'state/store'
+
+const moduleLogger = logger.child({
+  namespace: ['Trade', 'hooks', 'useTradeQuoteService'],
+})
 
 type GetTradeQuoteInputArgs = {
   sellAsset: Asset
@@ -84,60 +86,48 @@ The only mutation is on TradeState's quote property.
 */
 export const useTradeQuoteService = () => {
   // Form hooks
-  const { control, setValue } = useFormContext<TS>()
-  const sellTradeAsset = useWatch({ control, name: 'sellTradeAsset' })
-  const buyTradeAsset = useWatch({ control, name: 'buyTradeAsset' })
-  const sellAssetAccountId = useWatch({ control, name: 'sellAssetAccountId' })
-  const amount = useWatch({ control, name: 'amount' })
-  const action = useWatch({ control, name: 'action' })
+  const { setValue } = useFormContext<TS>()
 
-  // Types
-  type TradeQuoteQueryInput = Parameters<typeof useGetTradeQuoteQuery>
-  type TradeQuoteInputArg = TradeQuoteQueryInput[0]
+  // Hooks
+  const dispatch = useAppDispatch()
 
   // State
   const {
     state: { wallet },
   } = useWallet()
-  const [tradeQuoteArgs, setTradeQuoteArgs] = useState<TradeQuoteInputArg>(skipToken)
+  const [tradeQuoteData, setTradeQuoteData] = useState<GetTradeQuoteReturn>()
+  const [isLoadingTradeQuote, setIsLoadingTradeQuote] = useState<boolean>()
   const { receiveAddress } = useSwapper()
 
+  const portfolioAccountMetaData = useSelector(selectPortfolioAccountMetadata)
+  const portfolioAccountIds = useSelector(selectPortfolioAccountIds)
+
   // Constants
-  const sellAsset = sellTradeAsset?.asset
-  const buyAsset = buyTradeAsset?.asset
+  const { getTradeQuote } = swapperApi.endpoints
 
-  // Selectors
-  const selectedCurrencyToUsdRate = useAppSelector(selectFiatToUsdRate)
+  // Types
+  type GetTradeQuoteCallbackInput = {
+    sellAsset: Asset
+    buyAsset: Asset
+    sellAmount: string
+  }
 
-  const sellAssetAccountIds = useAppSelector(state =>
-    selectPortfolioAccountIdsByAssetId(state, {
-      assetId: sellAsset?.assetId ?? '',
-    }),
-  )
-  const sellAccountFilter = { accountId: sellAssetAccountId ?? sellAssetAccountIds[0] }
-  const sellAccountMetadata = useAppSelector(state =>
-    selectPortfolioAccountMetadataByAccountId(state, sellAccountFilter),
-  )
+  // Callbacks
+  const getTradeQuoteCallback = useCallback(
+    async ({
+      sellAsset,
+      buyAsset,
+      sellAmount,
+    }: GetTradeQuoteCallbackInput): Promise<GetTradeQuoteReturn | undefined> => {
+      const accountIds = portfolioAccountIds.filter(
+        accountId => fromAccountId(accountId).chainId === buyAsset.chainId,
+      )
+      // When getting the quote it doesn't matter which account we use, so we just use the first one
+      const firstAccountId = accountIds[0]
+      if (!firstAccountId) return
+      const accountMetadata = portfolioAccountMetaData[firstAccountId]
 
-  // API
-  const { data: tradeQuote, isLoading: isLoadingTradeQuote } = useGetTradeQuoteQuery(
-    tradeQuoteArgs,
-    { pollingInterval: 30000 },
-  )
-
-  // Effects
-  // Trigger trade quote query
-  useEffect(() => {
-    const sellTradeAssetAmount = sellTradeAsset?.amount
-    if (
-      sellAsset &&
-      buyAsset &&
-      wallet &&
-      sellTradeAssetAmount &&
-      receiveAddress &&
-      sellAccountMetadata
-    ) {
-      ;(async () => {
+      if (sellAsset && buyAsset && wallet && sellAmount && receiveAddress && accountMetadata) {
         const { chainId: receiveAddressChainId } = fromAssetId(buyAsset.assetId)
         const chainAdapter = getChainAdapterManager().get(receiveAddressChainId)
 
@@ -146,34 +136,47 @@ export const useTradeQuoteService = () => {
 
         const tradeQuoteInputArgs: GetTradeQuoteInput | undefined = await getTradeQuoteArgs({
           sellAsset,
-          sellAccountBip44Params: sellAccountMetadata.bip44Params,
-          sellAccountType: sellAccountMetadata.accountType,
+          sellAccountBip44Params: accountMetadata.bip44Params,
+          sellAccountType: accountMetadata.accountType,
           buyAsset,
           wallet,
           receiveAddress,
-          sellAmount: sellTradeAssetAmount,
+          sellAmount,
         })
-        tradeQuoteInputArgs && setTradeQuoteArgs(tradeQuoteInputArgs)
-      })()
-    }
-  }, [
-    action,
-    amount,
-    buyAsset,
-    buyTradeAsset,
-    receiveAddress,
-    sellAccountMetadata,
-    selectedCurrencyToUsdRate,
-    sellAsset,
-    sellTradeAsset,
-    setValue,
-    wallet,
-  ])
 
+        if (!tradeQuoteInputArgs) return
+        try {
+          setIsLoadingTradeQuote(true)
+          const { data } = await dispatch(getTradeQuote.initiate(tradeQuoteInputArgs))
+          setTradeQuoteData(data)
+          setValue('quote', tradeQuoteData)
+        } catch (error) {
+          moduleLogger.error(error, 'Error getting trade quote')
+        } finally {
+          setIsLoadingTradeQuote(false)
+        }
+
+        return tradeQuoteData
+      }
+    },
+    [
+      dispatch,
+      getTradeQuote,
+      portfolioAccountIds,
+      portfolioAccountMetaData,
+      receiveAddress,
+      setValue,
+      tradeQuoteData,
+      wallet,
+    ],
+  )
+
+  // Effects
   // Set trade quote
   useEffect(() => {
-    tradeQuote && setValue('quote', tradeQuote)
-  }, [tradeQuote, setValue])
+    console.log('xxx setting trade quote', { tradeQuoteData, isLoadingTradeQuote })
+    tradeQuoteData && !isLoadingTradeQuote && setValue('quote', tradeQuoteData)
+  }, [tradeQuoteData, setValue, isLoadingTradeQuote])
 
-  return { isLoadingTradeQuote }
+  return { isLoadingTradeQuote, getTradeQuoteCallback }
 }

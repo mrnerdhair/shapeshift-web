@@ -33,7 +33,7 @@ type State = {
   preferences: Preferences
 }
 
-type GetTradeQuoteReturn = TradeQuote<ChainId>
+export type GetTradeQuoteReturn = TradeQuote<ChainId>
 
 export const swapperApi = createApi({
   ...BASE_RTK_CREATE_API_CONFIG,
@@ -107,6 +107,7 @@ export const swapperApi = createApi({
           const tradeQuote = await swapper.getTradeQuote(args)
           return { data: tradeQuote }
         } catch (e) {
+          console.log('xxx getTradeQuote: error fetching trade quote', e)
           return {
             error: {
               error: 'getTradeQuote: error fetching trade quote',

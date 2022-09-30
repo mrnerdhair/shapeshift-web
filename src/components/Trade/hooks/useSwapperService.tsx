@@ -1,5 +1,5 @@
 import { useAccountsService } from 'components/Trade/hooks/useAccountsService'
-import { useFeesService } from 'components/Trade/hooks/useFeesService'
+import { useFees } from 'components/Trade/hooks/useFees'
 import { useFiatRateService } from 'components/Trade/hooks/useFiatRateService'
 import { useTradeQuoteService } from 'components/Trade/hooks/useTradeQuoteService'
 
@@ -10,7 +10,7 @@ export const useSwapperService = () => {
   // Initialize child services
   const { isLoadingFiatRateData } = useFiatRateService()
   const { isLoadingTradeQuote } = useTradeQuoteService()
-  useFeesService()
+  useFees()
   useAccountsService()
 
   return { isLoadingTradeQuote, isLoadingFiatRateData }

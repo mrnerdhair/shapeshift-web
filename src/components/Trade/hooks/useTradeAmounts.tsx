@@ -187,6 +187,7 @@ export const useTradeAmounts = () => {
       quoteResponse?.data ? setValue('quote', quoteResponse.data) : setValue('quote', undefined)
 
       // If we can't get a quote our trade fee will be 0 - this is likely not desired long-term
+      console.log('xxx quoteResponse?.data', { quoteRes: quoteResponse?.data })
       const formFees = quoteResponse?.data
         ? getFormFees({
             trade: quoteResponse.data,
