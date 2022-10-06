@@ -27,13 +27,17 @@ import { Text } from 'components/Text'
 import { TokenRow } from 'components/TokenRow/TokenRow'
 import { useModal } from 'hooks/useModal/useModal'
 import { useWallet } from 'hooks/useWallet/useWallet'
+import { logger } from 'lib/logger'
 
 import type { SendInput } from '../Form'
 import { useSendDetails } from '../hooks/useSendDetails/useSendDetails'
 import { SendFormFields, SendRoutes } from '../SendCommon'
 import { SendMaxButton } from '../SendMaxButton/SendMaxButton'
-
+const moduleLogger = logger.child({
+  namespace: ['SendDetails'],
+})
 export const Details = () => {
+  moduleLogger.info('Details1')
   const { control, setValue } = useFormContext<SendInput>()
   const history = useHistory()
   const translate = useTranslate()
@@ -42,7 +46,7 @@ export const Details = () => {
     useWatch({
       control,
     }) as Partial<SendInput>
-
+  moduleLogger.info('Details2')
   const handleAccountChange = useCallback(
     (accountId: AccountId) => {
       setValue(SendFormFields.AccountId, accountId)
@@ -64,7 +68,7 @@ export const Details = () => {
     loading,
     toggleCurrency,
   } = useSendDetails()
-
+  moduleLogger.info('Details3')
   const {
     state: { wallet },
   } = useWallet()
@@ -72,7 +76,7 @@ export const Details = () => {
   if (!(asset && !isNil(cryptoAmount) && cryptoSymbol && !isNil(fiatAmount) && fiatSymbol)) {
     return null
   }
-
+  moduleLogger.info('Details4')
   return (
     <SlideTransition loading={balancesLoading}>
       <IconButton

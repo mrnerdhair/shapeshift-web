@@ -155,10 +155,18 @@ export type ValidateAddress = (args: ValidateAddressArgs) => Promise<ValidateAdd
 
 export const validateAddress: ValidateAddress = async ({ chainId, value }) => {
   try {
+    moduleLogger.info('validateAddress1')
     const adapter = getChainAdapterManager().get(chainId)
+    moduleLogger.info('validateAddress2')
     if (!adapter) return false
-    return (await adapter.validateAddress(value)).valid
+    moduleLogger.info('validateAddress3')
+    moduleLogger.info('validateAddress3.1')
+    const v = (await adapter.validateAddress(value)).valid
+    moduleLogger.info(`validateAddress4: ${v}`)
+    return v
   } catch (e) {
+    moduleLogger.info('validateAddress5')
+    moduleLogger.error(e, 'ERRRORRRRR')
     return false
   }
 }
@@ -179,20 +187,28 @@ export type ParseAddressInputReturn = {
 export type ParseAddressInput = (args: ParseAddressInputArgs) => Promise<ParseAddressInputReturn>
 
 export const parseAddressInput: ParseAddressInput = async args => {
+  moduleLogger.info('parseAddressInput1')
   const parsedArgs = parseMaybeUrlByChainId(args)
-
+  moduleLogger.info('parseAddressInput2')
   const isValidAddress = await validateAddress(parsedArgs)
+  moduleLogger.info('parseAddressInput3')
   // we're dealing with a valid address
   if (isValidAddress) {
+    moduleLogger.info('parseAddressInput4')
     const vanityAddress = await reverseLookupVanityAddress(parsedArgs)
+    moduleLogger.info('parseAddressInput5')
     // return a valid address, and a possibly blank or populated vanity address
     return { address: parsedArgs.value, vanityAddress }
   }
+  moduleLogger.info('parseAddressInput6')
   // at this point it's not a valid address, but may not be a vanity address
   const isVanityAddress = await validateVanityAddress(parsedArgs)
+  moduleLogger.info('parseAddressInput7')
   // it's neither a valid address nor a vanity address
   if (!isVanityAddress) return { address: '', vanityAddress: '' }
+  moduleLogger.info('parseAddressInput8')
   // at this point it's a valid vanity address, let's resolve it
   const address = await resolveVanityAddress(parsedArgs)
+  moduleLogger.info('parseAddressInput9')
   return { address, vanityAddress: parsedArgs.value }
 }

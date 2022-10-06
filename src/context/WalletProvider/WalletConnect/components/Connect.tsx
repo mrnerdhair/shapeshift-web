@@ -6,6 +6,7 @@ import type { ActionTypes } from 'context/WalletProvider/actions'
 import { WalletActions } from 'context/WalletProvider/actions'
 import { KeyManager } from 'context/WalletProvider/KeyManager'
 import { setLocalWalletTypeAndDeviceId } from 'context/WalletProvider/local-wallet'
+// import { useFeatureFlag } from 'hooks/useFeatureFlag/useFeatureFlag'
 import { useWallet } from 'hooks/useWallet/useWallet'
 import { logger } from 'lib/logger'
 
@@ -13,7 +14,6 @@ import { ConnectModal } from '../../components/ConnectModal'
 import type { LocationState } from '../../NativeWallet/types'
 import { WalletConnectConfig } from '../config'
 import { WalletNotFoundError } from '../Error'
-
 export interface WalletConnectSetupProps
   extends RouteComponentProps<
     {},
@@ -37,6 +37,7 @@ export const WalletConnectConnect = ({ history }: WalletConnectSetupProps) => {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const translate = useTranslate()
+  // const isMobileWalletconnectEnabled = useFeatureFlag('MobileWalletConnect')
 
   const setErrorLoading = (e: string | null) => {
     setError(e)
@@ -50,31 +51,42 @@ export const WalletConnectConnect = ({ history }: WalletConnectSetupProps) => {
   }, [onProviderChange])
 
   const pairDevice = async () => {
+    moduleLogger.info(`WC: Connect: pairDevice`)
     setError(null)
     setLoading(true)
 
     if (!(state.provider && 'connector' in state.provider)) {
+      moduleLogger.info(`WC: ERRORRRRSSs`)
       throw new Error('walletProvider.walletconnect.errors.connectFailure')
     }
 
     try {
       state.provider.connector.on('disconnect', () => {
         // Handle WalletConnect session rejection
+        moduleLogger.info(`WC: pushing failure`)
         history.push('/walletconnect/failure')
       })
 
       if (state.adapters && state.adapters?.has(KeyManager.WalletConnect)) {
+        moduleLogger.info(`WC: Connect.1`)
         const wallet = (await state.adapters
           .get(KeyManager.WalletConnect)
           ?.pairDevice()) as WalletConnectHDWallet
 
+        moduleLogger.info(`WC: Connect.2`)
         if (!wallet) {
           throw new WalletNotFoundError()
         }
+        moduleLogger.info(`WC: Connect.3`)
 
-        const { name, icon } = WalletConnectConfig
+        // if (isMobileWalletconnectEnabled) {
+        //   moduleLogger.debug('hi')
+        // }
+        const { name, icon, supportsMobile } = WalletConnectConfig
+        moduleLogger.info(`WC: Connect.4`)
+        moduleLogger.debug(`Connect.tsx supportsMobile: ${supportsMobile}`)
         const deviceId = await wallet.getDeviceID()
-
+        moduleLogger.info(`WC: Connect.5`)
         dispatch({
           type: WalletActions.SET_WALLET,
           payload: { wallet, name, icon, deviceId },

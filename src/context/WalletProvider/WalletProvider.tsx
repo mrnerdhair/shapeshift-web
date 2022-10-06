@@ -585,14 +585,18 @@ export const WalletProvider = ({ children }: { children: React.ReactNode }): JSX
               dispatch({ type: WalletActions.SET_LOCAL_WALLET_LOADING, payload: false })
               break
             case KeyManager.WalletConnect:
+              moduleLogger.info(`WC: calling pairDevice`)
               const localWalletConnectWallet = await state.adapters
                 .get(KeyManager.WalletConnect)
                 ?.pairDevice()
               if (localWalletConnectWallet) {
+                moduleLogger.info(`WC: have local wallet ${localWalletConnectWallet}`)
                 const { name, icon } = SUPPORTED_WALLETS[KeyManager.WalletConnect]
                 try {
+                  moduleLogger.info(`WC: calling initialize`)
                   await localWalletConnectWallet.initialize()
                   const deviceId = await localWalletConnectWallet.getDeviceID()
+                  moduleLogger.info(`WC: deviceId ${deviceId}`)
                   dispatch({
                     type: WalletActions.SET_WALLET,
                     payload: {
@@ -608,6 +612,7 @@ export const WalletProvider = ({ children }: { children: React.ReactNode }): JSX
                   disconnect()
                 }
               } else {
+                moduleLogger.info(`WC: have no local wallet`)
                 disconnect()
               }
               dispatch({ type: WalletActions.SET_LOCAL_WALLET_LOADING, payload: false })
@@ -674,6 +679,7 @@ export const WalletProvider = ({ children }: { children: React.ReactNode }): JSX
   // Register a MetaMask-like (EIP-1193) provider on wallet connect or load
   const onProviderChange = useCallback(
     async (localWalletType: KeyManagerWithProvider | null) => {
+      moduleLogger.info(`onProviderChange`)
       if (!localWalletType) return
       setWalletType(localWalletType)
       if (!walletType) return
@@ -696,6 +702,9 @@ export const WalletProvider = ({ children }: { children: React.ReactNode }): JSX
                 1: getConfig().REACT_APP_ETHEREUM_NODE_URL,
               },
             }
+            moduleLogger.info(
+              `returning new WalletConnectProviderConfig: ${JSON.stringify(config)}`,
+            )
             return new WalletConnectProvider(config)
           }
 
@@ -726,17 +735,21 @@ export const WalletProvider = ({ children }: { children: React.ReactNode }): JSX
   }, [state.wallet, onProviderChange])
 
   useEffect(() => {
+    moduleLogger.info(`WC: WalletProvider useEffect1`)
     if (state.keyring) {
+      moduleLogger.info(`WC: WalletProvider useEffect2`)
       ;(async () => {
         const adapters: Adapters = new Map()
         let options: undefined | { portisAppId: string } | WalletConnectProviderConfig
         for (const wallet of Object.values(KeyManager)) {
+          moduleLogger.info(`WC: WalletProvider useEffect3`)
           try {
             switch (wallet) {
               case 'portis':
                 options = { portisAppId: getConfig().REACT_APP_PORTIS_DAPP_ID }
                 break
               case 'walletconnect':
+                moduleLogger.info(`WC: WalletProvider useEffect4`)
                 options = {
                   rpc: {
                     1: getConfig().REACT_APP_ETHEREUM_NODE_URL,

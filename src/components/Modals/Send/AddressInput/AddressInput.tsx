@@ -6,6 +6,7 @@ import { useTranslate } from 'react-polyglot'
 import { useHistory } from 'react-router-dom'
 import { QRCodeIcon } from 'components/Icons/QRCode'
 import { useFeatureFlag } from 'hooks/useFeatureFlag/useFeatureFlag'
+import { logger } from 'lib/logger'
 
 import type { SendInput } from '../Form'
 import { SendFormFields, SendRoutes } from '../SendCommon'
@@ -13,8 +14,9 @@ import { SendFormFields, SendRoutes } from '../SendCommon'
 type AddressInputProps = {
   rules: ControllerProps['rules']
 }
-
+const moduleLogger = logger.child({ namespace: ['AddressInput'] })
 export const AddressInput = ({ rules }: AddressInputProps) => {
+  moduleLogger.info('Send:Address:AddressInput')
   const asset = useWatch<SendInput, SendFormFields.Asset>({ name: SendFormFields.Asset })
   const history = useHistory()
   const translate = useTranslate()
@@ -24,6 +26,15 @@ export const AddressInput = ({ rules }: AddressInputProps) => {
   const handleQrClick = () => {
     history.push(SendRoutes.Scan)
   }
+
+  // const myOnChange = (
+  //   src: ChangeEventHandler<HTMLInputElement> | undefined,
+  // ): ChangeEventHandler<HTMLInputElement> | undefined => {
+  //   moduleLogger.info('myOnChange, invoking callback... ')
+  //   src && src(this)
+  //   return
+  //   // cb()
+  // }
 
   return (
     <InputGroup size='lg'>

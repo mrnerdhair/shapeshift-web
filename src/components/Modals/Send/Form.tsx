@@ -7,6 +7,7 @@ import { FormProvider, useForm } from 'react-hook-form'
 import type { RouteComponentProps } from 'react-router-dom'
 import { Redirect, Route, Switch, useHistory, useLocation } from 'react-router-dom'
 import { SelectAssetRouter } from 'components/SelectAssets/SelectAssetRouter'
+import { logger } from 'lib/logger'
 import { selectMarketDataById, selectSelectedCurrency } from 'state/slices/selectors'
 import { useAppSelector } from 'state/store'
 
@@ -16,6 +17,10 @@ import { Address } from './views/Address'
 import { Confirm } from './views/Confirm'
 import { Details } from './views/Details'
 import { QrCodeScanner } from './views/QrCodeScanner'
+
+const moduleLogger = logger.child({
+  namespace: ['WalletConnect', 'Components', 'Connect'],
+})
 
 export type SendInput<T extends ChainId = ChainId> = {
   [SendFormFields.Input]: string
@@ -77,6 +82,7 @@ export const Form: React.FC<SendFormProps> = ({ asset: initialAsset, accountId }
   }
 
   const checkKeyDown = (event: React.KeyboardEvent<HTMLFormElement>) => {
+    moduleLogger.info('Form: checkKeyDown')
     if (event.key === 'Enter') event.preventDefault()
   }
 

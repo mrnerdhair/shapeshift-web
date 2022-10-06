@@ -51,7 +51,17 @@ import { validatorDataApi } from 'state/slices/validatorDataSlice/validatorDataS
 import { useAppSelector } from 'state/store'
 
 const moduleLogger = logger.child({ namespace: ['AppContext'] })
+// globalThis.localStorage?.removeItem('walletconnect')
+// globalThis.localStorage?.removeItem('localWalletDeviceId')
+// globalThis.localStorage?.removeItem('localWalletType')
+// globalThis.localStorage?.removeItem('localWalletName')
 
+const wt = globalThis.localStorage?.getItem('localWalletType')
+const did = globalThis.localStorage?.getItem('localWalletDeviceId')
+const wn = globalThis.localStorage?.getItem('localWalletName')
+const walletconnstr = globalThis.localStorage?.getItem('walletconnect')
+
+moduleLogger.info(`type: ${wt}, id: ${did}, name: ${wn}, wallconnect: ${walletconnstr}`)
 /**
  * note - be super careful playing with this component, as it's responsible for asset,
  * market data, and portfolio fetching, and we don't want to over or under fetch data,
@@ -104,6 +114,13 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
     const disconnected = !wallet
     switched && moduleLogger.info('Wallet switched')
     disconnected && moduleLogger.info('Wallet disconnected')
+    if (switched && !disconnected) {
+      const vendor = wallet.getVendor()
+      if (vendor === 'WalletConnect') {
+        moduleLogger.info(`WalletConnect then switch; disconnecting`)
+        // wallet.disconnect()
+      }
+    }
     if (switched || disconnected) {
       dispatch(accountSpecifiers.actions.clear())
       dispatch(portfolio.actions.clear())
