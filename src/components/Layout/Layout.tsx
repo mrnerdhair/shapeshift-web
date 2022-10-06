@@ -1,4 +1,5 @@
 import type { ContainerProps } from '@chakra-ui/react'
+import { Box } from '@chakra-ui/react'
 import {
   Alert,
   AlertDescription,
@@ -64,7 +65,7 @@ const DegradedStateBanner = () => {
 export const Layout: React.FC<ContainerProps> = ({ children, ...rest }) => {
   const isDegradedState = useSelector(selectPortfolioLoadingStatus) === 'error'
   return (
-    <>
+    <Box overflowX={{ base: 'hidden', md: 'visible' }}>
       <Header />
 
       <Flex maxWidth='container.3xl' margin='0 auto'>
@@ -86,6 +87,6 @@ export const Layout: React.FC<ContainerProps> = ({ children, ...rest }) => {
           </>
         </Container>
       </Flex>
-    </>
+    </Box>
   )
 }

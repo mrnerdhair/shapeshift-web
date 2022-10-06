@@ -15,6 +15,7 @@ import { Link, useHistory } from 'react-router-dom'
 import { FoxIcon } from 'components/Icons/FoxIcon'
 import { Text } from 'components/Text'
 import { WalletActions } from 'context/WalletProvider/actions'
+import { useDragProvider } from 'hooks/useDragProvider/useDragProvider'
 import { useWallet } from 'hooks/useWallet/useWallet'
 
 import { AutoCompleteSearch } from './AutoCompleteSearch/AutoCompleteSearch'
@@ -24,7 +25,8 @@ import { UserMenu } from './NavBar/UserMenu'
 import { SideNavContent } from './SideNavContent'
 
 export const Header = () => {
-  const { onToggle, isOpen, onClose } = useDisclosure()
+  const { onToggle, isOpen, onClose, onOpen } = useDisclosure()
+  const { touchEnd, direction, onTouchEnd } = useDragProvider()
   const history = useHistory()
   const bg = useColorModeValue('white', 'gray.800')
   const borderColor = useColorModeValue('gray.100', 'gray.750')
@@ -52,6 +54,14 @@ export const Header = () => {
   }, [handleKeyPress])
 
   const handleBannerClick = () => dispatch({ type: WalletActions.SET_WALLET_MODAL, payload: true })
+
+  useEffect(() => {
+    if (direction) {
+      onToggle()
+    }
+
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [direction])
 
   return (
     <>
@@ -128,7 +138,7 @@ export const Header = () => {
           </HStack>
         </HStack>
       </Flex>
-      <Drawer isOpen={isOpen} onClose={onClose} placement='left'>
+      <Drawer isOpen={isOpen} onClose={onClose} placement='left' closeOnOverlayClick={false}>
         <DrawerOverlay />
         <DrawerContent
           paddingTop='env(safe-area-inset-top)'
