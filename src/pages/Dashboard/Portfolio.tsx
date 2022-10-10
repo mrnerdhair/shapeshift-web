@@ -28,7 +28,6 @@ import {
 } from 'state/slices/selectors'
 
 import { AccountTable } from './components/AccountList/AccountTable'
-import { PortfolioBreakdown } from './PortfolioBreakdown'
 
 export const Portfolio = () => {
   const [timeframe, setTimeframe] = useState<HistoryTimeframe>(DEFAULT_HISTORY_TIMEFRAME)
@@ -99,7 +98,7 @@ export const Portfolio = () => {
           <Flex flexDir='column' justifyContent='center' alignItems='center'>
             <Card.Heading as='div' color='gray.500'>
               <Skeleton isLoaded={isLoaded}>
-                <Text translation='defi.netWorth' />
+                <Text translation='dashboard.portfolio.portfolioBalance' />
               </Skeleton>
             </Card.Heading>
             <Card.Heading as='h2' fontSize='4xl' lineHeight='1'>
@@ -141,7 +140,6 @@ export const Portfolio = () => {
         </Skeleton>
       </Card>
       <MaybeChartUnavailable assetIds={assetIds} />
-      <PortfolioBreakdown />
       <Card>
         <Card.Header>
           <Card.Heading>
