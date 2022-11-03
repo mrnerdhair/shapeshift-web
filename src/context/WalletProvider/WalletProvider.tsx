@@ -37,6 +37,7 @@ import {
   setLocalWalletTypeAndDeviceId,
 } from './local-wallet'
 import { useNativeEventHandler } from './NativeWallet/hooks/useNativeEventHandler'
+import { useWalletConnectEventHandler } from './WalletConnect/hooks/useWalletConnectEventHandler'
 import type { IWalletContext } from './WalletContext'
 import { WalletContext } from './WalletContext'
 import { WalletViewsRouter } from './WalletViewsRouter'
@@ -592,14 +593,18 @@ export const WalletProvider = ({ children }: { children: React.ReactNode }): JSX
               dispatch({ type: WalletActions.SET_LOCAL_WALLET_LOADING, payload: false })
               break
             case KeyManager.WalletConnect:
+              moduleLogger.info({ fn: 'load' }, 'it is WalletConnect type')
               const localWalletConnectWallet = await state.adapters
                 .get(KeyManager.WalletConnect)
                 ?.pairDevice()
               if (localWalletConnectWallet) {
+                moduleLogger.info({ fn: 'load' }, 'have localWalletConnectWallet')
                 const { name, icon } = SUPPORTED_WALLETS[KeyManager.WalletConnect]
                 try {
                   await localWalletConnectWallet.initialize()
+                  moduleLogger.info({ fn: 'load' }, 'localWalletConnectWallet initialized')
                   const deviceId = await localWalletConnectWallet.getDeviceID()
+                  moduleLogger.info({ fn: 'load' }, 'dispatching SET_WALLET')
                   dispatch({
                     type: WalletActions.SET_WALLET,
                     payload: {
@@ -609,17 +614,29 @@ export const WalletProvider = ({ children }: { children: React.ReactNode }): JSX
                       deviceId,
                     },
                   })
+                  moduleLogger.info(
+                    { fn: 'load' },
+                    'dispatching SET_IS_LOCKED=false, SET_IS_CONNECTED=true',
+                  )
                   dispatch({ type: WalletActions.SET_IS_LOCKED, payload: false })
                   dispatch({ type: WalletActions.SET_IS_CONNECTED, payload: true })
                 } catch (e) {
+                  moduleLogger.error(
+                    e,
+                    { fn: 'load' },
+                    'error loading existing walletconnect wallet',
+                  )
                   disconnect()
                 }
               } else {
+                moduleLogger.info({ fn: 'load' }, 'NO localWalletConnectWallet, disconnecting')
                 disconnect()
               }
+              moduleLogger.info({ fn: 'load' }, 'dispatching SET_LOCAL_WALLET_LOADING=false')
               dispatch({ type: WalletActions.SET_LOCAL_WALLET_LOADING, payload: false })
               break
             default:
+              moduleLogger.info({ fn: 'load' }, `unhandled localWalletType ${localWalletType}`)
               /**
                * The fall-through case also handles clearing
                * any demo wallet state on refresh/rerender.
@@ -836,6 +853,7 @@ export const WalletProvider = ({ children }: { children: React.ReactNode }): JSX
   useKeyringEventHandler(state)
   useNativeEventHandler(state, dispatch)
   useKeepKeyEventHandler(state, dispatch, load, setDeviceState)
+  useWalletConnectEventHandler(state, dispatch)
 
   const value: IWalletContext = useMemo(
     () => ({

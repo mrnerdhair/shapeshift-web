@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { useToast } from '@chakra-ui/toast'
 import type { Event } from '@shapeshiftoss/hdwallet-core'
 import { Events } from '@shapeshiftoss/hdwallet-core'
@@ -225,7 +226,11 @@ export const useKeepKeyEventHandler = (
       try {
         const id = keyring.getAlias(deviceId)
         const wallet = keyring.get(id)
-        if (wallet && id === state.walletInfo?.deviceId) {
+        moduleLogger.info(
+          { vendor: wallet?.getVendor(), deviceId, fn: 'handleConnect' },
+          `Device Connected: ${wallet?.getVendor()}`,
+        )
+        if (wallet?.getVendor() === 'KeepKey' && id === state.walletInfo?.deviceId) {
           // This gets the firmware version needed for some KeepKey "supportsX" functions
           await wallet.getFeatures()
           // Show the label from the wallet instead of a generic name
@@ -267,15 +272,15 @@ export const useKeepKeyEventHandler = (
     }
 
     // Handle all KeepKey events
-    keyring.on(['KeepKey', '*', '*'], handleEvent)
-    // HDWallet emits (DIS)CONNECT events as "KeepKey - {LABEL}" so we can't just listen for "KeepKey"
-    keyring.on(['KeepKey', '*', Events.CONNECT], handleConnect)
-    keyring.on(['KeepKey', '*', Events.DISCONNECT], handleDisconnect)
+    // keyring.on(['KeepKey', '*', '*'], handleEvent)
+    // // HDWallet emits (DIS)CONNECT events as "KeepKey - {LABEL}" so we can't just listen for "KeepKey"
+    // keyring.on(['*', '*', Events.CONNECT], handleConnect)
+    // keyring.on(['*', '*', Events.DISCONNECT], handleDisconnect)
 
     return () => {
       // keyring.off(['KeepKey', '*', '*'], handleEvent)
-      // keyring.off(['KeepKey', '*', Events.CONNECT], handleConnect)
-      // keyring.off(['KeepKey', '*', Events.DISCONNECT], handleDisconnect)
+      // keyring.off(['*', '*', Events.CONNECT], handleConnect)
+      // keyring.off(['*', '*', Events.DISCONNECT], handleDisconnect)
     }
   }, [
     dispatch,
