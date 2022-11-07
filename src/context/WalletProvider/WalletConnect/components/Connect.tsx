@@ -28,7 +28,6 @@ export interface WalletConnectSetupProps
  * Test WalletConnect Tool: https://test.walletconnect.org/
  */
 export const WalletConnectConnect = ({ history }: WalletConnectSetupProps) => {
-  moduleLogger.info({ fn: 'WalletConnectConnect' }, 'WalletConnectConnect component')
   moduleLogger.debug({ history }, '')
   const { dispatch, state, onProviderChange } = useWallet()
   const [loading] = useState(false)

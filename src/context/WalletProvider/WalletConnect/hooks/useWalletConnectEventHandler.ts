@@ -22,133 +22,105 @@ export const useWalletConnectEventHandler = (
   state: InitialState,
   dispatch: Dispatch<ActionTypes>,
 ) => {
-  moduleLogger.info({ fn: 'useWalletConnectEventHandler' }, 'begins')
   const { keyring, walletInfo, adapters } = state
   const [initialized, setInitialized] = useState(false)
-  //   const { history } = props
-  //   const translate = useTranslate()
-
-  //   const setErrorLoading = (e: string | null) => {
-  //     setError(e)
-  //     setLoading(false)
-  //   }
 
   const pairDevice = useCallback(async () => {
-    const registerDisconnectEventHandler = () => {
-      keyring.on(['*', '*', Events.DISCONNECT], async (deviceId: string) => {
-        moduleLogger.info(
-          { deviceId, walletDeviceId: walletInfo?.deviceId, fn: 'WC: handleDisconnect' },
-          'Device Disconnected',
-        )
-        try {
-          moduleLogger.info({ deviceId, fn: 'WC: handleDisconnect' }, 'using device id')
-          // if (useDeviceId === state.walletInfo?.deviceId) {
-          moduleLogger.info(
-            { deviceId, fn: 'WC: handleDisconnect' },
-            'Dispatching SET_IS_CONNECTED false',
-          )
-          dispatch({ type: WalletActions.RESET_STATE })
-          clearLocalWallet()
-          dispatch({ type: WalletActions.SET_IS_CONNECTED, payload: false })
-          //   history.push('/walletconnect/failure')
-          // }
-        } catch (e) {
-          moduleLogger.error(e, { fn: 'handleDisconnect' }, 'Device Disconnected Error')
-        }
-      })
-    }
-
-    moduleLogger.info({ fn: 'WC.pairDevice' }, 'pairDevice1')
-    // setError(null)
-    // setLoading(true)
-
     if (!(state.provider && 'connector' in state.provider)) {
-      moduleLogger.info({ fn: 'WC.pairDevice' }, 'pairDevice2b')
       throw new Error('walletProvider.walletconnect.errors.connectFailure')
     }
 
     try {
-      moduleLogger.info({ fn: 'WC.pairDevice' }, 'pairDevice2a')
-      //   state.provider.wc.on('disconnect', () => {
-      //     // Handle WalletConnect session rejection
-      //     moduleLogger.info({ fn: 'WC: handleDisconnect' }, 'walletconnect disconnect event received')
-      //     history.push('/walletconnect/failure')
-      //   })
-      //   moduleLogger.info({ fn: 'WC.pairDevice' }, 'pairDevice3')
-
-      registerDisconnectEventHandler()
-
-      moduleLogger.info({}, 'pairDevice4')
       if (adapters && adapters?.has(KeyManager.WalletConnect)) {
-        moduleLogger.info({}, 'pairDevice5')
+        moduleLogger.info({ fn: 'pairDevice' }, 'pairDevice invoked, calling hdwallet pairDevice')
         const wallet = (await adapters
           .get(KeyManager.WalletConnect)
           ?.pairDevice()) as WalletConnectHDWallet
-        moduleLogger.info({}, 'pairDevice6')
         if (!wallet) {
           throw new WalletNotFoundError()
         }
-        moduleLogger.info({}, 'pairDevice7')
+        const wc = localStorage.getItem('walletconnect')
+        if (!wc) {
+          moduleLogger.error(
+            null,
+            { fn: 'pairDevice' },
+            'no walletconnect localstorage key defined',
+          )
+          throw new WalletNotFoundError()
+        }
+
         const { name, icon } = WalletConnectConfig
         const deviceId = await wallet.getDeviceID()
-        moduleLogger.info({ deviceId }, 'pairDevice8')
-        // const adapt = state.adapters.get(KeyManager.WalletConnect)
-
         dispatch({
           type: WalletActions.SET_WALLET,
           payload: { wallet, name, icon, deviceId },
         })
-        moduleLogger.info({}, 'pairDevice9')
         dispatch({ type: WalletActions.SET_IS_CONNECTED, payload: true })
-        moduleLogger.info({}, 'pairDevice10')
         setLocalWalletTypeAndDeviceId(KeyManager.WalletConnect, deviceId)
-        moduleLogger.info({}, 'pairDevice11')
         dispatch({ type: WalletActions.SET_WALLET_MODAL, payload: false })
-        moduleLogger.info({}, 'pairDevice12')
       }
     } catch (e: unknown) {
-      moduleLogger.error(e, { fn: 'WC.pairDevice' }, 'error pairing')
+      moduleLogger.error(e, { fn: 'pairDevice' }, 'error pairing')
       if (e instanceof WalletNotFoundError) {
         moduleLogger.error(
           e,
           { fn: 'pairDevice' },
           'WalletConnect Connect: There was an error initializing the wallet',
         )
-        moduleLogger.info({}, 'pairDevice14')
-        // setErrorLoading(translate(e.message))
-        moduleLogger.info({ fn: 'WC.pairDevice' }, 'pairDevice15')
-      } else {
-        moduleLogger.info({}, 'pairDevice16')
-        // history.push('/walletconnect/failure')
       }
     }
-  }, [adapters, dispatch, keyring, state, walletInfo])
+  }, [adapters, dispatch, state])
+
+  const handleConnect = useCallback(
+    async (deviceId: string, payload: any) => {
+      moduleLogger.info({ fn: 'handleConnect', deviceId, payload }, 'handleConnect')
+      await pairDevice()
+      moduleLogger.info({ fn: 'handleConnect' }, 'device paired')
+    },
+    [pairDevice],
+  )
+
+  // listen for walletconnect session ending on server side
+  const handleDisconnect = useCallback(
+    (deviceId: string, payload: any) => {
+      moduleLogger.info(
+        { payload, deviceId, walletDeviceId: walletInfo?.deviceId, fn: 'WC: handleDisconnect' },
+        'Device Disconnected',
+      )
+      try {
+        moduleLogger.info({ deviceId, fn: 'WC: handleDisconnect' }, 'using device id')
+        // if (useDeviceId === state.walletInfo?.deviceId) {
+        moduleLogger.info(
+          { deviceId, fn: 'WC: handleDisconnect' },
+          'Dispatching SET_IS_CONNECTED false',
+        )
+        dispatch({ type: WalletActions.RESET_STATE })
+        clearLocalWallet()
+        dispatch({ type: WalletActions.SET_IS_CONNECTED, payload: false })
+      } catch (e) {
+        moduleLogger.error(e, { fn: 'handleDisconnect' }, 'Device Disconnected Error')
+      }
+    },
+    [dispatch, walletInfo?.deviceId],
+  )
 
   useEffect(() => {
-    moduleLogger.info(
-      { fn: 'useEffect' },
-      `initialized: ${initialized}, state.provider: ${state.provider}`,
-    )
-    if (initialized) {
-      return
-    }
     if (!state.provider) {
       return
     }
-
-    const handleConnect = async () => {
-      moduleLogger.info({ fn: 'handleConnect' }, 'handleConnect')
-      await pairDevice()
-      moduleLogger.info({ fn: 'handleConnect' }, 'device paired')
+    if (initialized) {
+      return
     }
-    moduleLogger.info({ fn: 'useEffect' }, 'registering connect event handler')
-    keyring.on(['*', '*', Events.CONNECT], handleConnect)
     setInitialized(true)
+    moduleLogger.info({ fn: 'subscribeevents' }, 'registering handlers for CONNECT and DISCONNECT')
+    keyring.on(['*', '*', Events.CONNECT], handleConnect)
+    keyring.on(['*', '*', Events.DISCONNECT], handleDisconnect)
     return () => {
-      moduleLogger.info({ fn: 'destructor' }, 'unregistering connect event handler')
-      keyring.off(['*', '*', Events.CONNECT], handleConnect)
+      // moduleLogger.info({ fn: 'subscribeevents destructor' }, 'destroying stuff')
+      // keyring.off(['*', '*', Events.CONNECT], handleConnect)
+      // keyring.off(['*', '*', Events.DISCONNECT], handleDisconnect)
     }
-  }, [initialized, setInitialized, keyring, pairDevice, state.provider])
+  }, [state.provider, handleConnect, handleDisconnect, keyring, initialized])
 
   return { pairDevice }
 }

@@ -272,15 +272,15 @@ export const useKeepKeyEventHandler = (
     }
 
     // Handle all KeepKey events
-    // keyring.on(['KeepKey', '*', '*'], handleEvent)
-    // // HDWallet emits (DIS)CONNECT events as "KeepKey - {LABEL}" so we can't just listen for "KeepKey"
-    // keyring.on(['*', '*', Events.CONNECT], handleConnect)
-    // keyring.on(['*', '*', Events.DISCONNECT], handleDisconnect)
+    keyring.on(['KeepKey', '*', '*'], handleEvent)
+    // HDWallet emits (DIS)CONNECT events as "KeepKey - {LABEL}" so we can't just listen for "KeepKey"
+    keyring.on(['*', '*', Events.CONNECT], handleConnect)
+    keyring.on(['*', '*', Events.DISCONNECT], handleDisconnect)
 
     return () => {
-      // keyring.off(['KeepKey', '*', '*'], handleEvent)
-      // keyring.off(['*', '*', Events.CONNECT], handleConnect)
-      // keyring.off(['*', '*', Events.DISCONNECT], handleDisconnect)
+      keyring.off(['KeepKey', '*', '*'], handleEvent)
+      keyring.off(['*', '*', Events.CONNECT], handleConnect)
+      keyring.off(['*', '*', Events.DISCONNECT], handleDisconnect)
     }
   }, [
     dispatch,
