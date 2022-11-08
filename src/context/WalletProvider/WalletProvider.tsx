@@ -355,7 +355,7 @@ export const WalletProvider = ({ children }: { children: React.ReactNode }): JSX
 
     const localWalletType = getLocalWalletType()
     const localWalletDeviceId = getLocalWalletDeviceId()
-    fnLogger.trace({ localWalletType, localWalletDeviceId }, 'Load local wallet')
+    fnLogger.info({ localWalletType, localWalletDeviceId }, 'Load local wallet')
     if (localWalletType && localWalletDeviceId && state.adapters) {
       ;(async () => {
         if (state.adapters?.has(localWalletType)) {
@@ -366,7 +366,7 @@ export const WalletProvider = ({ children }: { children: React.ReactNode }): JSX
             case KeyManager.Mobile:
               try {
                 const w = await getWallet(localWalletDeviceId)
-                fnLogger.trace({ id: w?.id, label: w?.label }, 'Found mobile wallet')
+                fnLogger.info({ id: w?.id, label: w?.label }, 'Found mobile wallet')
                 if (w && w.mnemonic && w.label) {
                   const localMobileWallet = await state.adapters
                     .get(KeyManager.Native)
@@ -593,7 +593,7 @@ export const WalletProvider = ({ children }: { children: React.ReactNode }): JSX
               dispatch({ type: WalletActions.SET_LOCAL_WALLET_LOADING, payload: false })
               break
             case KeyManager.WalletConnect:
-              moduleLogger.info({ fn: 'load' }, 'it is WalletConnect2')
+              moduleLogger.info({ fn: 'load' }, 'WalletConnect load')
               // if (!localStorage.getItem('walletconnect')) {
               //   moduleLogger.warn({}, { fn: 'load' }, 'no walletconnect in localStorage')
               //   localStorage.removeItem('localWalletType')
@@ -603,9 +603,17 @@ export const WalletProvider = ({ children }: { children: React.ReactNode }): JSX
               // }
               let localWalletConnectWallet: HDWallet | undefined
               try {
+                // call pair on the HDWallet impl
                 localWalletConnectWallet = await state.adapters
                   .get(KeyManager.WalletConnect)
                   ?.pairDevice()
+                moduleLogger.info(
+                  { fn: 'load', localWalletConnectWallet },
+                  'WalletConnect device paired: ',
+                )
+                if (localWalletConnectWallet) {
+                  setWallet(localWalletConnectWallet)
+                }
               } catch (e) {
                 moduleLogger.error(e, { fn: 'load' }, 'error calling HDWallet.pairDevice')
                 disconnect()
@@ -868,7 +876,7 @@ export const WalletProvider = ({ children }: { children: React.ReactNode }): JSX
   useKeyringEventHandler(state)
   useNativeEventHandler(state, dispatch)
   useKeepKeyEventHandler(state, dispatch, load, setDeviceState)
-  useWalletConnectEventHandler(state, dispatch)
+  const { setWallet } = useWalletConnectEventHandler(state, dispatch, load)
 
   const value: IWalletContext = useMemo(
     () => ({

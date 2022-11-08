@@ -29,11 +29,11 @@ export interface WalletConnectSetupProps
  */
 export const WalletConnectConnect = ({ history }: WalletConnectSetupProps) => {
   moduleLogger.debug({ history }, '')
-  const { dispatch, state, onProviderChange } = useWallet()
+  const { dispatch, state, onProviderChange, load } = useWallet()
   const [loading] = useState(false)
   const [error] = useState<string | null>(null)
 
-  const { pairDevice } = useWalletConnectEventHandler(state, dispatch)
+  const { pairDevice } = useWalletConnectEventHandler(state, dispatch, load)
   useEffect(() => {
     ;(async () => {
       await onProviderChange(KeyManager.WalletConnect)
