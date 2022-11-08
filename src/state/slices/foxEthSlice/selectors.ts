@@ -3,8 +3,10 @@ import type { AccountId } from '@shapeshiftoss/caip'
 import { CHAIN_NAMESPACE, ethAssetId, fromAccountId, fromAssetId } from '@shapeshiftoss/caip'
 import keys from 'lodash/keys'
 import { createCachedSelector } from 're-reselect'
+import { useMemo } from 'react'
 import { bn, bnOrZero } from 'lib/bignumber/bignumber'
 import { toBaseUnit } from 'lib/math'
+import { isDefined } from 'lib/utils'
 import type { ReduxState } from 'state/reducer'
 import { createDeepEqualOutputSelector } from 'state/selector-utils'
 import {
@@ -16,6 +18,7 @@ import { selectMarketData } from 'state/slices/marketDataSlice/selectors'
 
 import { foxEthLpAssetId } from './constants'
 import type { FoxEthLpEarnOpportunityType, FoxFarmingEarnOpportunityType } from './foxEthCommon'
+import { baseLpOpportunity } from './foxEthCommon'
 
 const farmingOpportunitiesReducer = (
   acc: Record<string, FoxFarmingEarnOpportunityType>,
@@ -64,11 +67,11 @@ export const selectFoxEthLpAccountOpportunitiesByMaybeAccountAddress = createCac
   (state: ReduxState) => state.foxEth,
   selectAccountAddressParamFromFilterOptional,
   selectEthAccountIdsByAssetId,
-  (foxEthState, accountAddress, ethAccountIds) => {
+  (foxEthState, accountAddress, ethAccountIds): FoxEthLpEarnOpportunityType[] => {
     const ethAccountAddresses = ethAccountIds.map(accountId => fromAccountId(accountId).account)
-    return (accountAddress ? [accountAddress] : ethAccountAddresses).map(
-      accountAddress => foxEthState[accountAddress]?.lpOpportunity,
-    )
+    return (accountAddress ? [accountAddress] : ethAccountAddresses)
+      .map(accountAddress => foxEthState[accountAddress]?.lpOpportunity)
+      .filter(isDefined)
   },
 )((_s: ReduxState, filter) => filter?.accountAddress ?? 'accountAddress')
 
@@ -81,34 +84,36 @@ export const selectFoxEthLpOpportunityByAccountAddress = createSelector(
 export const selectFoxEthLpAccountsOpportunitiesAggregated = createDeepEqualOutputSelector(
   selectFoxEthLpAccountOpportunitiesByMaybeAccountAddress,
   (state: ReduxState) => state,
-  (wrappedEthLpOpportunities, state) => {
+  (wrappedEthLpOpportunities, state): FoxEthLpEarnOpportunityType => {
     const aggregatedOpportunity = wrappedEthLpOpportunities
       .filter(Boolean)
-      .reduce((acc, currentOpportunity) => {
-        acc = {
+      .reduce<Partial<FoxEthLpEarnOpportunityType>>(
+        (acc, currentOpportunity) => ({
           ...currentOpportunity,
-          underlyingFoxAmount: bnOrZero(acc.underlyingFoxAmount)
-            .plus(currentOpportunity.underlyingFoxAmount ?? '')
+          underlyingFoxAmount: bnOrZero(acc?.underlyingFoxAmount)
+            .plus(currentOpportunity?.underlyingFoxAmount ?? '')
             .toString(),
-          underlyingEthAmount: bnOrZero(acc.underlyingEthAmount)
-            .plus(currentOpportunity.underlyingEthAmount ?? '')
+          underlyingEthAmount: bnOrZero(acc?.underlyingEthAmount)
+            .plus(currentOpportunity?.underlyingEthAmount ?? '')
             .toString(),
-          cryptoAmount: bnOrZero(acc.cryptoAmount)
-            .plus(currentOpportunity.cryptoAmount ?? '')
+          cryptoAmount: bnOrZero(acc?.cryptoAmount)
+            .plus(currentOpportunity?.cryptoAmount ?? '')
             .toString(),
-          fiatAmount: bnOrZero(acc.fiatAmount)
-            .plus(currentOpportunity.fiatAmount ?? '')
+          fiatAmount: bnOrZero(acc?.fiatAmount)
+            .plus(currentOpportunity?.fiatAmount ?? '')
             .toString(),
-        }
-        return acc
-      }, {} as FoxEthLpEarnOpportunityType)
+        }),
+        {},
+      )
 
+    const emptyFilter = useMemo(() => ({}), [])
     const highestBalanceAccountAddress = selectHighestBalanceFoxLpOpportunityAccountAddress(
       state,
-      {},
+      emptyFilter,
     )
 
     return {
+      ...baseLpOpportunity,
       ...aggregatedOpportunity,
       highestBalanceAccountAddress,
     }
@@ -218,7 +223,9 @@ export const selectHighestBalanceFoxLpOpportunityAccountAddress = createSelector
   selectFoxEthLpAccountOpportunitiesByMaybeAccountAddress,
   opportunities =>
     opportunities.sort((a, b) => {
-      return bn(b.fiatAmount).minus(a.fiatAmount).toNumber()
+      return bnOrZero(b?.fiatAmount)
+        .minus(a?.fiatAmount ?? '0')
+        .toNumber()
     })[0]?.accountAddress ?? '',
 )
 
