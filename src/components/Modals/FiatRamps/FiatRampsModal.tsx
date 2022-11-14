@@ -1,7 +1,7 @@
 import { Modal, ModalContent, ModalOverlay } from '@chakra-ui/modal'
 import { useMediaQuery } from '@chakra-ui/react'
 import type { AssetId } from '@shapeshiftoss/caip'
-import { FiatForm } from 'components/Modals/FiatRamps/views/FiatForm'
+import { FiatRamps } from 'components/Modals/FiatRamps/views/FiatRamps'
 import { useModal } from 'hooks/useModal/useModal'
 import { breakpoints } from 'theme/theme'
 
@@ -33,7 +33,7 @@ export const FiatRampsModal: React.FC<FiatRampsModalProps> = ({ fiatRampAction, 
         minWidth={{ base: '100%', md: '500px' }}
         maxWidth={{ base: 'full', md: '500px' }}
       >
-        <FiatForm assetId={assetId} fiatRampAction={fiatRampAction} />
+        <FiatRamps assetId={assetId} fiatRampAction={fiatRampAction} />
       </ModalContent>
     </Modal>
   )

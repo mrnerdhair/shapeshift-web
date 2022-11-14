@@ -10,7 +10,7 @@ import { Card } from 'components/Card/Card'
 import { Main } from 'components/Layout/Main'
 import { SEO } from 'components/Layout/Seo'
 import { FiatRampAction } from 'components/Modals/FiatRamps/FiatRampsCommon'
-import { FiatForm } from 'components/Modals/FiatRamps/views/FiatForm'
+import { FiatRamps } from 'components/Modals/FiatRamps/views/FiatRamps'
 import { Text } from 'components/Text'
 import { WalletActions } from 'context/WalletProvider/actions'
 import { useWallet } from 'hooks/useWallet/useWallet'
@@ -82,7 +82,7 @@ export const Buy = () => {
             </Flex>
             <Box flexBasis='400px'>
               <Card mx={{ base: -4, md: 0 }}>
-                <FiatForm assetId={selectedAssetId} fiatRampAction={FiatRampAction.Buy} />
+                <FiatRamps assetId={selectedAssetId} fiatRampAction={FiatRampAction.Buy} />
               </Card>
             </Box>
           </Flex>
