@@ -47,6 +47,7 @@ import { DappBack } from './components/DappBack'
 import { FoxChart } from './components/FoxChart'
 import { FoxTab } from './components/FoxTab'
 import { Governance } from './components/Governance'
+import { KeepKeyDiscount } from './components/KeepKeyDiscount'
 import { Layout } from './components/Layout'
 import { MainOpportunity } from './components/MainOpportunity'
 import { OtherOpportunities } from './components/OtherOpportunities/OtherOpportunities'
@@ -271,6 +272,7 @@ export const FoxPage = () => {
               </Stack>
               <Stack flex='1 1 0%' width='full' maxWidth={{ base: 'full', lg: 'sm' }} spacing={4}>
                 <AssetActions assetId={foxAssetId} />
+                <KeepKeyDiscount />
                 <DappBack />
                 <TradeOpportunities opportunities={assetsTradeOpportunitiesBuckets[foxAssetId]} />
                 <AssetMarketData assetId={selectedAsset.assetId} />
