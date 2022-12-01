@@ -1,5 +1,6 @@
+import { SwapperName } from '@shapeshiftoss/swapper'
 import { HistoryTimeframe } from '@shapeshiftoss/types'
-import { Dex, TransferType } from '@shapeshiftoss/unchained-client'
+import { TransferType } from '@shapeshiftoss/unchained-client'
 import dayjs from 'dayjs'
 import { useEffect, useMemo, useState } from 'react'
 import { useDispatch } from 'react-redux'
@@ -32,7 +33,7 @@ export const useTradeFees = ({ txDetails }: { txDetails: TxDetails }) => {
 
   useEffect(() => {
     if (!(txDetails.tx.trade && buy && sell)) return
-    if (txDetails.tx.trade.dexName !== Dex.CowSwap) return
+    if (txDetails.tx.trade.dexName !== SwapperName.CowSwap) return
 
     if (!cryptoPriceHistoryData?.[buy.asset.assetId]) {
       dispatch(

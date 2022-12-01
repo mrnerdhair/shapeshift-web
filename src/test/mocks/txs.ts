@@ -1,7 +1,8 @@
 import { AddressZero } from '@ethersproject/constants'
 import { ethAssetId, ethChainId, foxAssetId } from '@shapeshiftoss/caip'
+import { SwapperName } from '@shapeshiftoss/swapper'
 import { UtxoAccountType } from '@shapeshiftoss/types'
-import { Dex, TradeType, TransferType, TxStatus } from '@shapeshiftoss/unchained-client'
+import { TradeType, TransferType, TxStatus } from '@shapeshiftoss/unchained-client'
 import type { Tx } from 'state/slices/txHistorySlice/txHistorySlice'
 
 export const EthSend: Tx = {
@@ -113,7 +114,7 @@ export const TradeTx: Tx = {
   },
   status: TxStatus.Confirmed,
   trade: {
-    dexName: Dex.Zrx,
+    dexName: SwapperName.Zrx,
     type: TradeType.Trade,
   },
   transfers: [
