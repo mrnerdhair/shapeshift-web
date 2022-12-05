@@ -68,7 +68,7 @@ const createDraftPR = async (): Promise<void> => {
   exit(chalk.green(`Release ${nextVersion} created.`))
 }
 
-type GetCommitMessagesArgs = 'develop' | 'release'
+type GetCommitMessagesArgs = 'develop' | 'release' | 'main'
 type GetCommitMessagesReturn = {
   messages: string[]
   total: number
@@ -112,12 +112,25 @@ const doRegularRelease = async () => {
 }
 
 const doHotfixRelease = async () => {
-  exit(chalk.yellow('Unimplemented. PRs welcome!'))
-  // TODO(0xdef1cafe): implement hotfix release
-  // 1. ask if we want to merge currently checked out branch to main
-  // 2. set release to current branch
-  // 3. force push release to origin
-  // 4. create draft PR
+  await fetch()
+  const { messages, total } = await getCommits('main')
+  assertCommitsToRelease(total)
+  console.log('Asking if we want to merge currently checked out branch to main...')
+  await inquireProceedWithCommits(messages, 'merge')
+  console.log(chalk.green('Checking out main...'))
+  await git().checkout(['main'])
+  console.log(chalk.green('Merging current branch into main...'))
+  await git().merge(['--no-ff', '-m', 'Merge current branch into main'])
+  console.log(chalk.green('Resetting release to main...'))
+  // **note** - most devs are familiar with lowercase -b to check out a new branch
+  // capital -B will checkout and reset the branch to the current HEAD
+  // so we can reuse the release branch, and force push over it
+  // this is required as the fleek environment is pointed at this specific branch
+  await git().checkout(['-B', 'release'])
+  console.log(chalk.green('Force pushing release branch...'))
+  await git().push(['--force', 'origin', 'release'])
+  await createDraftPR()
+  exit()
 }
 
 type WebReleaseType = Extract<semver.ReleaseType, 'minor' | 'patch'>
