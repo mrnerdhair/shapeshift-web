@@ -145,8 +145,10 @@ export const yearnStakingOpportunityIdsResolver = async (): Promise<{
     return await getYearnInvestor().findAll()
   })()
 
+  const vaultsWithTvl = opportunities.filter(e => bnOrZero(e.tvl.balanceUsdc).gt(0))
+
   return {
-    data: opportunities.map(opportunity => {
+    data: vaultsWithTvl.map(opportunity => {
       const assetId = toOpportunityId({
         assetNamespace: 'erc20',
         assetReference: opportunity.id,
