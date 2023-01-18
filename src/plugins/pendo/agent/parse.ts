@@ -39,7 +39,7 @@ export async function parseAgent(
     throw new PendoAgentValidationError('fixupTables is not an object')
   }
 
-  const lines = src.split('\n')
+  const lines = src.split('\n').filter(Boolean)
   const agentHeaderLines = []
   const innerAgentLines = []
   const config: Record<string, unknown> = {}
@@ -49,14 +49,17 @@ export async function parseAgent(
       throw new PendoAgentValidationError('expected line missing')
     }
     const line = last ? lines.pop() : lines.shift()
-    if (line === undefined || !regex.test(line)) {
+    if (!line) return line
+    if (!regex.test(line)) {
       moduleLogger.error({ regex, line }, 'line does not match expectations')
       throw new PendoAgentValidationError('line does not match expectations')
     }
     return line
   }
+
   const expectLastLine = (regex: RegExp) => expectLine(regex, true)
   agentHeaderLines.push(expectLine(/^\/\/ Pendo Agent Wrapper$/))
+  agentHeaderLines.push(expectLine(/^\/\/ Copyright 2023 Pendo.io, Inc.$/))
   agentHeaderLines.push(expectLine(/^\/\/ Environment:\s+(production|staging)$/))
   agentHeaderLines.push(expectLine(/^\/\/ Agent Version:\s+(\d+\.)*\d+$/))
   agentHeaderLines.push(expectLine(/^\/\/ Installed:\s+\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/))
@@ -77,6 +80,7 @@ export async function parseAgent(
     if (/^\s*$/.test(line)) continue
     const result = /^\s*([a-zA-Z][a-zA-Z0-9]*)\s*:\s*(.*?)\s*,?\s*$/.exec(line)
     if (!result) {
+      debugger
       moduleLogger.error({ line }, 'configuration value unparsable')
       throw new PendoAgentValidationError('configuration line unparsable')
     }

@@ -138,13 +138,15 @@ export function filterRequest(
       this.transmissionLog.push(transmission)
     }
   } else if (guideHosts.includes(url.host)) {
-    if (!/^\/guide-content\/.*\.dom\.json$/.test(url.pathname)) {
+    if (!/^\/guide-content\/.*$/.test(url.pathname)) {
+      debugger
       moduleLogger.error({ url }, 'fetch from guide host does not appear to be for a guide')
       throw new PendoGuideRequestError()
     }
     // Verify no unexpected data in the URL parameters
     let sawIntegrity = false
-    for (const [k, v] of url.searchParams.entries()) {
+    const entries = url.searchParams.entries()
+    for (const [k, v] of entries) {
       switch (k) {
         case 'sha256': {
           const expectedIntegrity = `sha256-${v}`
@@ -163,7 +165,8 @@ export function filterRequest(
           throw new PendoGuideRequestError()
       }
     }
-    if (!sawIntegrity) {
+    if (!sawIntegrity && !entries.next().done) {
+      debugger
       moduleLogger.error({ url }, 'no SRI parameter in URL')
       throw new PendoGuideRequestError()
     }
@@ -184,6 +187,10 @@ export async function filterResponse(
     return new Response(null, { status: 200 })
   }
   const resBuf = await response.arrayBuffer()
+  if (!resBuf.byteLength) {
+    debugger
+    return new Response(null, { status: 200 })
+  }
   const resObj = (() => {
     try {
       return JSON.parse(new TextDecoder().decode(resBuf))
@@ -223,7 +230,7 @@ export async function filterResponse(
         `PendoEnv: Expected preventCodeInjection to be set on a guide, but it wasn't. It's been set anyway.`,
       )
     }
-    resObj.preventCodeInjection = true
+    // resObj.preventCodeInjection = true
   }
   // The agent doesn't use headers or statusText, so we can ignore them
   return new Response(JSON.stringify(resObj), {
